@@ -1,16 +1,103 @@
-# untitled4
+# 🧮 Calculator App (Flutter)
 
-A new Flutter project.
+A modern, simple, and responsive **Calculator Application** built using **Flutter**.  
+This project demonstrates clean UI design, smooth interactions, and basic mathematical expression handling.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 🚀 Features
 
-A few resources to get you started if this is your first Flutter project:
+- ➕ Addition  
+- ➖ Subtraction  
+- ✖ Multiplication  
+- ➗ Division  
+- 🧹 Clear / Reset functionality  
+- 🎨 Clean & responsive UI  
+- ⚡ Lightweight and fast performance  
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 📱 Screenshots
+
+Add your app screenshots inside:
+
+assets/screenshots/
+
+Example:
+
+assets/screenshots/calculator.png
+
+---
+
+## 🛠 Tech Stack
+
+- **Flutter (Dart)**
+- **Material Design UI Components**
+
+---
+
+## 📂 Project Structure
+
+lib/  
+ ┣ main.dart          # App entry point  
+ ┣ screens/           # UI screens  
+ ┣ widgets/           # Reusable UI components  
+ ┗ logic/             # Calculator operations  
+
+---
+
+## ⚙️ Getting Started
+
+Follow these steps to run the project locally:
+
+### 1️⃣ Clone the repository
+
+git clone https://github.com/Andrew-Kevin-007/Calculator.git  
+cd Calculator  
+
+### 2️⃣ Install dependencies
+
+flutter pub get  
+
+### 3️⃣ Run the app
+
+flutter run  
+
+---
+
+## 📌 Requirements
+
+Make sure you have:
+
+- Flutter SDK (latest stable)
+- Android Studio / VS Code
+- Android Emulator or Physical Device
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome!
+
+1. Fork the repository  
+2. Create a new branch (`feature/new-feature`)  
+3. Commit your changes  
+4. Push to your branch  
+5. Open a Pull Request  
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**.
+
+---
+
+## 👨‍💻 Author
+
+**Kevin Andrew A**  
+GitHub: [@Andrew-Kevin-007](https://github.com/Andrew-Kevin-007)
+
+---
+
+⭐ If you like this project, don’t forget to give it a star!
