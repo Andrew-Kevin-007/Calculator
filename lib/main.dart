@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 void main() {
-  // Lock orientation for a consistent calculator experience
   WidgetsFlutterBinding.ensureInitialized();
+  // Set status bar color to transparent
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+  ));
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(const CalculatorApp());
 }
@@ -15,33 +19,35 @@ class CalculatorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF17171C),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.orange,
-          brightness: Brightness.dark,
-        ),
+      title: 'Premium Calculator',
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        fontFamily: 'Roboto', // Ensure a clean font
       ),
-      home: const Calculator(),
+      home: const CalculatorScreen(),
     );
   }
 }
 
-class Calculator extends StatefulWidget {
-  const Calculator({super.key});
+class CalculatorScreen extends StatefulWidget {
+  const CalculatorScreen({super.key});
 
   @override
-  State<Calculator> createState() => _CalculatorState();
+  State<CalculatorScreen> createState() => _CalculatorScreenState();
 }
 
-class _CalculatorState extends State<Calculator> {
+class _CalculatorScreenState extends State<CalculatorScreen> {
   String _output = "0";
   String _expression = "";
   double? _firstNumber;
   String? _operator;
   bool _shouldReset = false;
 
+  // Production Logic: Handles math operations safely
   void _onButtonClick(String value) {
+    HapticFeedback.lightImpact(); // Production touch: Haptics
+
     setState(() {
       if (value == "AC") {
         _output = "0";
@@ -49,168 +55,217 @@ class _CalculatorState extends State<Calculator> {
         _firstNumber = null;
         _operator = null;
       } else if (value == "⌫") {
-        if (_output.length > 1) {
-          _output = _output.substring(0, _output.length - 1);
-        } else {
-          _output = "0";
+        if (_output != "0") {
+          _output = _output.length > 1 ? _output.substring(0, _output.length - 1) : "0";
         }
-      } else if (value == "+" || value == "-" || value == "×" || value == "÷") {
+      } else if (value == "%") {
+        double val = double.tryParse(_output) ?? 0;
+        _output = (val / 100).toString();
+      } else if (["+", "-", "×", "÷"].contains(value)) {
         _firstNumber = double.tryParse(_output);
         _operator = value;
         _expression = "$_output $value";
         _shouldReset = true;
       } else if (value == "=") {
-        if (_firstNumber != null && _operator != null) {
-          double secondNumber = double.tryParse(_output) ?? 0;
-          double result = 0;
-          switch (_operator) {
-            case "+": result = _firstNumber! + secondNumber; break;
-            case "-": result = _firstNumber! - secondNumber; break;
-            case "×": result = _firstNumber! * secondNumber; break;
-            case "÷": result = secondNumber != 0 ? _firstNumber! / secondNumber : 0; break;
-          }
-          _expression = "$_expression $secondNumber =";
-          _output = result.toString().endsWith(".0")
-              ? result.toInt().toString()
-              : result.toString();
+        _calculateResult();
+      } else {
+        _appendNumber(value);
+      }
+    });
+  }
+
+  void _appendNumber(String value) {
+    if (_shouldReset) {
+      _output = value == "." ? "0." : value;
+      _shouldReset = false;
+    } else {
+      if (value == "." && _output.contains(".")) return;
+      if (_output == "0" && value != ".") {
+        _output = value;
+      } else {
+        _output += value;
+      }
+    }
+  }
+
+  void _calculateResult() {
+    if (_firstNumber == null || _operator == null) return;
+    double secondNumber = double.tryParse(_output) ?? 0;
+    double result = 0;
+
+    switch (_operator) {
+      case "+": result = _firstNumber! + secondNumber; break;
+      case "-": result = _firstNumber! - secondNumber; break;
+      case "×": result = _firstNumber! * secondNumber; break;
+      case "÷":
+        if (secondNumber == 0) {
+          _output = "Error";
+          _expression = "";
           _firstNumber = null;
           _operator = null;
           _shouldReset = true;
+          return;
         }
-      } else {
-        // Handle numbers and decimal
-        if (_shouldReset) {
-          _output = value == "." ? "0." : value;
-          _shouldReset = false;
-        } else {
-          if (value == "." && _output.contains(".")) return;
-          _output = (_output == "0" && value != ".") ? value : _output + value;
-        }
-      }
-    });
+        result = _firstNumber! / secondNumber;
+        break;
+    }
+
+    _expression = "$_expression $secondNumber =";
+    // Format result: Remove trailing .0 and limit decimals
+    _output = result.toString().endsWith(".0")
+        ? result.toInt().toString()
+        : result.toStringAsFixed(result.toString().split('.').last.length > 4 ? 4 : result.toString().split('.').last.length);
+
+    _firstNumber = null;
+    _operator = null;
+    _shouldReset = true;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Display Area
-            Expanded(
-              flex: 2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                alignment: Alignment.bottomRight,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
+      backgroundColor: const Color(0xFF121212),
+      body: Column(
+        children: [
+          // 1. Display Section with Animation
+          Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
                       _expression,
-                      style: TextStyle(fontSize: 24, color: Colors.white.withOpacity(0.5)),
+                      key: ValueKey(_expression),
+                      style: TextStyle(fontSize: 22, color: Colors.white.withOpacity(0.4)),
                     ),
-                    const SizedBox(height: 8),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        _output,
-                        style: const TextStyle(fontSize: 80, fontWeight: FontWeight.w300, color: Colors.white),
+                  ),
+                  const SizedBox(height: 10),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _output,
+                      style: const TextStyle(
+                        fontSize: 90,
+                        fontWeight: FontWeight.w200,
+                        color: Colors.white,
+                        letterSpacing: -2,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            // Buttons Area
-            Expanded(
-              flex: 3,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF212121),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildRow(["AC", "⌫", "%", "÷"], isSpecial: true),
-                    _buildRow(["7", "8", "9", "×"]),
-                    _buildRow(["4", "5", "6", "-"]),
-                    _buildRow(["1", "2", "3", "+"]),
-                    _buildRow(["00", "0", ".", "="], isLast: true),
-                  ],
-                ),
+          ),
+          // 2. Keypad Section
+          Expanded(
+            flex: 5,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildButtonRow(["AC", "⌫", "%", "÷"]),
+                  _buildButtonRow(["7", "8", "9", "×"]),
+                  _buildButtonRow(["4", "5", "6", "-"]),
+                  _buildButtonRow(["1", "2", "3", "+"]),
+                  _buildButtonRow(["00", "0", ".", "="]),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildRow(List<String> labels, {bool isSpecial = false, bool isLast = false}) {
+  Widget _buildButtonRow(List<String> labels) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: labels.map((label) {
-        return _CalcButton(
-          label: label,
-          onTap: () => _onButtonClick(label),
-          color: _getButtonColor(label),
-          textColor: _getTextColor(label),
-        );
-      }).toList(),
+      children: labels.map((label) => _CalcButton(
+        label: label,
+        onTap: () => _onButtonClick(label),
+        isAccent: ["÷", "×", "-", "+", "="].contains(label),
+        isAction: ["AC", "⌫", "%"].contains(label),
+      )).toList(),
     );
-  }
-
-  Color _getButtonColor(String label) {
-    if (label == "=") return Colors.orangeAccent;
-    if (["÷", "×", "-", "+"].contains(label)) return const Color(0xFF2C2C2C);
-    if (["AC", "⌫", "%"].contains(label)) return const Color(0xFF2C2C2C);
-    return Colors.transparent;
-  }
-
-  Color _getTextColor(String label) {
-    if (label == "=") return Colors.white;
-    if (["÷", "×", "-", "+"].contains(label)) return Colors.orangeAccent;
-    if (["AC", "⌫", "%"].contains(label)) return Colors.redAccent;
-    return Colors.white;
   }
 }
 
 class _CalcButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  final Color color;
-  final Color textColor;
+  final bool isAccent;
+  final bool isAction;
 
   const _CalcButton({
     required this.label,
     required this.onTap,
-    required this.color,
-    required this.textColor,
+    this.isAccent = false,
+    this.isAction = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Determine colors based on button type
+    Color bgColor = const Color(0xFF2C2C2C);
+    Color textColor = Colors.white;
+
+    if (isAccent) {
+      bgColor = label == "=" ? Colors.orangeAccent : const Color(0xFF3D3D3D);
+      textColor = Colors.orangeAccent;
+      if (label == "=") textColor = Colors.white;
+    } else if (isAction) {
+      textColor = Colors.redAccent.shade100;
+    }
+
     return Expanded(
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Material(
-            color: color,
-            shape: const CircleBorder(),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onTap,
-              child: Center(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 5,
+                  offset: const Offset(2, 4),
+                )
+              ],
+            ),
+            child: Material(
+              color: bgColor,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onTap,
+                splashColor: Colors.white10,
+                child: Center(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: label.length > 1 ? 18 : 28,
+                      fontWeight: FontWeight.w400,
+                      color: textColor,
+                    ),
                   ),
                 ),
               ),
